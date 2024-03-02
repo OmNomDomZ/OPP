@@ -3,6 +3,7 @@
 #include <cmath>
 #include <chrono>
 #include <fstream>
+#include <thread>
 #include <vector>
 #include <omp.h>
 
@@ -20,6 +21,7 @@ double* Solve(double*& A, double*& b, int size) {
     FillZero(x, size);
     FillZero(final_x, size);
 
+
     double res = EPSILON;
     double norm_x_squared = 0;
     double norm_b = 0;
@@ -30,30 +32,37 @@ double* Solve(double*& A, double*& b, int size) {
     norm_b = sqrt(norm_b);
     int iter = 0;
 
-    while (res >= EPSILON) {
-        #pragma omp parallel for schedule(guided) reduction(+:norm_x_squared)
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                final_x[i] += A[i * size + j] * x[j];           // final_x = Ax
+    #pragma omp parallel
+    {
+        while (res >= EPSILON) {
+            #pragma omp for reduction(+:norm_x_squared)
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < size; j++) {
+                    final_x[i] += A[i * size + j] * x[j];           // final_x = Ax
+                }
+                final_x[i] -= b[i];                                 // final_x = Ax - b
+                norm_x_squared += final_x[i] * final_x[i];          // ||Ax - b|| ^ 2
+                final_x[i] *= THAU;                                 // final_x = t(Ax - b)
+                final_x[i] = x[i] - final_x[i];                     // final_x = x - t(Ax - b)
             }
-            final_x[i] -= b[i];                                 // final_x = Ax - b
-            norm_x_squared += final_x[i] * final_x[i];          // ||Ax - b|| ^ 2
-            final_x[i] *= THAU;                                 // final_x = t(Ax - b)
-            final_x[i] = x[i] - final_x[i];                     // final_x = x - t(Ax - b)
+
+            #pragma omp for
+            for (int i = 0; i < size; i++) {
+                x[i] = final_x[i];
+            }
+
+            FillZero(final_x, size);
+
+            #pragma omp single
+            {
+                res = sqrt(norm_x_squared) / norm_b;
+                norm_x_squared = 0;
+                iter++;
+            }
+
         }
-
-
-        #pragma omp parallel for schedule(guided)
-        for (int i = 0; i < size; i++) {
-            x[i] = final_x[i];
-        }
-
-
-        res = sqrt(norm_x_squared) / norm_b;
-        norm_x_squared = 0;
-        FillZero(final_x, size);
-        iter++;
     }
+
     std::cout << iter << "\n";
 
     delete[] final_x;
@@ -72,6 +81,7 @@ int main(int argc, char** argv) {
 
     for (int numThreads = 1; numThreads <= NUM_THREADS_MAX; ++numThreads)
     {
+
         omp_set_num_threads(numThreads);
 
         std::chrono::high_resolution_clock clock;
@@ -84,7 +94,7 @@ int main(int argc, char** argv) {
         std::cout << time.count() << " s\n";
 
         delete[] x;
-        }
+    }
 
     delete[] A;
     delete[] u;
