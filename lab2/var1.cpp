@@ -31,7 +31,8 @@ double* Solve(double*& A, double*& b, int size) {
     int iter = 0;
 
     while (res >= EPSILON) {
-        #pragma omp parallel for schedule(guided) reduction(+:norm_x_squared)
+        // #pragma omp parallel for schedule(guided) reduction(+:norm_x_squared)
+        #pragma omp parallel for reduction(+:norm_x_squared)
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 final_x[i] += A[i * size + j] * x[j];           // final_x = Ax
@@ -42,8 +43,8 @@ double* Solve(double*& A, double*& b, int size) {
             final_x[i] = x[i] - final_x[i];                     // final_x = x - t(Ax - b)
         }
 
-
-        #pragma omp parallel for schedule(guided)
+        // #pragma omp parallel for schedule(guided)
+        #pragma omp parallel for
         for (int i = 0; i < size; i++) {
             x[i] = final_x[i];
         }
