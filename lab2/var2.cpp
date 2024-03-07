@@ -38,12 +38,12 @@ double* Solve(double*& A, double*& b, int size) {
             #pragma omp for reduction(+:norm_x_squared)
             for (int i = 0; i < size; i++) {
                 for (int j = 0; j < size; j++) {
-                    final_x[i] += A[i * size + j] * x[j];           // final_x = Ax
+                    final_x[i] += A[i * size + j] * x[j];
                 }
-                final_x[i] -= b[i];                                 // final_x = Ax - b
-                norm_x_squared += final_x[i] * final_x[i];          // ||Ax - b|| ^ 2
-                final_x[i] *= THAU;                                 // final_x = t(Ax - b)
-                final_x[i] = x[i] - final_x[i];                     // final_x = x - t(Ax - b)
+                final_x[i] -= b[i];
+                norm_x_squared += final_x[i] * final_x[i];
+                final_x[i] *= THAU;
+                final_x[i] = x[i] - final_x[i];
             }
 
             #pragma omp for
@@ -60,6 +60,7 @@ double* Solve(double*& A, double*& b, int size) {
                 iter++;
             }
 
+            #pragma omp barrier
         }
     }
 

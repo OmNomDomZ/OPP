@@ -1,19 +1,19 @@
 #ifndef OPERATIONS_H_INLUDED
 #define OPERATIONS_H_INLUDED
 
-#define THAU 0.0001
-#define EPSILON 1.0e-6
+#define THAU -0.01
+#define EPSILON 1.0e-3
 
-void PrintMat(double* mat, int size);
+void PrintMat(float* mat, int size);
 
-void PrintVect(double* vect, int size);
+void PrintVect(float* vect, int size);
 
-void FillZero(double*& array, int size);
+void FillZero(float*& array, int size);
 
-void FillMatrix(double*& matrix, int size);
+void FillMatrix(float*& matrix, int size);
 
-void FillVectU(double*& u, int size);
+void FillVectU(float*& u, int size);
 
-void FillVectB(double*& b, double*& u, double*& matrix, int size);
+void FillVectB(float*& b, float*& u, float*& matrix, int size);
 
 #endif
