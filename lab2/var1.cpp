@@ -1,14 +1,10 @@
 #include <iostream>
-#include <string>
 #include <cmath>
 #include <chrono>
 #include <fstream>
-#include <vector>
 #include <omp.h>
 
 #include "operations.h"
-
-using std::vector;
 
 const std::size_t VEC_SIZE = 2500;
 const std::size_t MAT_SIZE = 6250000;
@@ -36,45 +32,10 @@ float* readBinaryFile(const char* filename) {
     return buffer;
 }
 
-void printMatrixToFile(const char* filename, float* matrix) {
-    std::ofstream file(filename);
-
-    if (!file.is_open()) {
-        std::cerr << "Unable to open file: " << filename << std::endl;
-        return;
-    }
-
-    for (int i = 0; i < VEC_SIZE; ++i) {
-        for (int j = 0; j < VEC_SIZE; ++j) {
-            file << matrix[i * VEC_SIZE + j] << " ";
-        }
-        file << std::endl;
-    }
-
-    file.close();
-}
-
-// void printVecToFile(const char* filename, float* matrix) {
-//     std::ofstream file(filename);
-
-//     if (!file.is_open()) {
-//         std::cerr << "Unable to open file: " << filename << std::endl;
-//         return;
-//     }
-
-//     for (int i = 0; i < VEC_SIZE; ++i) {
-
-//         file << matrix[i] << '\n';
-//     }
-
-//     file.close();
-// }
-
 void writeFloatArrayToFile(const char* filename, float* array, size_t size) {
-    FILE* file = fopen(filename, "wb");  // Открытие файла для записи в бинарном режиме ("wb")
+    FILE* file = fopen(filename, "wb");
 
     if (file != NULL) {
-        // Запись вектора в файл
         fwrite(array, sizeof(float), size, file);
 
         fclose(file);
@@ -83,10 +44,8 @@ void writeFloatArrayToFile(const char* filename, float* array, size_t size) {
     }
 }
 
-float* Solve(float*& A, float*& b, int size) {
-    float* x = new float[size];
+float* Solve(float*& A, float*& b, float* x, int size) {
     float* final_x = new float[size];
-    FillZero(x, size);
     FillZero(final_x, size);
 
     float res = 1;
@@ -121,7 +80,6 @@ float* Solve(float*& A, float*& b, int size) {
         norm_x_squared = 0;
         FillZero(final_x, size);
         iter++;
-        std::cout << res << "\n";
     }
     std::cout << iter << "\n";
 
@@ -133,36 +91,32 @@ int main(int argc, char** argv) {
 
     float* A;
     float* b;
+    float* x;
 
-    // FillMatrix(A, VEC_SIZE);
     A = readBinaryFile("matA.bin");
-    // printMatrixToFile("Matrix.txt", A);
-
     b = readBinaryFile("vecB.bin");
-    // printVecToFile("vec.txt", b);
+    x = new float[VEC_SIZE];
 
-    // FillVectB(b, u, A, VEC_SIZE);
-
-    // for (int numThreads = 1; numThreads <= NUM_THREADS_MAX; ++numThreads)
-    // {
-        omp_set_num_threads(12);
+    for (int numThreads = 1; numThreads <= NUM_THREADS_MAX; ++numThreads)
+    {
+        FillZero(x, VEC_SIZE);
+        omp_set_num_threads(numThreads);
 
         std::chrono::high_resolution_clock clock;
 
         auto start = clock.now();
 
-        float* x = Solve(A, b, VEC_SIZE);
+        x = Solve(A, b, x, VEC_SIZE);
 
         auto end = clock.now();
 
         auto time = std::chrono::duration_cast<std::chrono::seconds> (end - start);
         std::cout << time.count() << " s\n";
+    }
 
-        writeFloatArrayToFile("myVecX", x, VEC_SIZE);
+    writeFloatArrayToFile("myVecX", x, VEC_SIZE);
 
-        delete[] x;
-    // }
-
+    delete[] x;
     delete[] A;
     delete[] b;
 }
